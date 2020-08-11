@@ -310,25 +310,25 @@ def send_receive_client_message(client_connection, client_ip_addr):
             fullname = dataFromClient['message_body']['fullname']
             username = dataFromClient['message_body']['username']
             password = dataFromClient['message_body']['password']
-            filename = dataFromClient['message_body']['file_name']
-            with open(filename, 'rb') as file:
-                    binaryData = file.read()
+            # filename = "sdhjsakhdkjas"
+            # with open(filename, 'rb') as file:
+                    # binaryData = file.read()
             
-            sql = "INSERT INTO user (name , username , password , picture ) VALUES (%s ,%s ,%s , %s )"
-            val = (fullname, username, password, binaryData)
+            sql = "INSERT INTO user (name , username , password ) VALUES (%s ,%s ,%s  )"
+            val = (fullname, username, password,)
             mycursor.execute(sql, val)
             mydb.commit()
             print(mycursor.rowcount, "record(s) affected")
 
             dataFromClient['message_content'] = "success"
 
-            dataFromClient['request_type'] == "ack"
+            dataFromClient['request_type'] == "signup_response"
 
             dataFromClient = json.dumps(dataFromClient)
 
             client_connection.send(dataFromClient.encode())
 
-            dataFromServer['request_type'] == "username_request" and dataFromServer['message_type'] == "send_username"
+            # dataFromServer['request_type'] == "username_request" and dataFromServer['message_type'] == "send_username"
 
         elif (dataFromClient['request_type'] == "delete_profile" ):
             sql = "DELETE FROM user WHERE username = %s"
@@ -346,7 +346,44 @@ def send_receive_client_message(client_connection, client_ip_addr):
             
             # dataFromClient['request_type'] = "delete_profile_request"
 
+        elif (dataFromClient['request_type'] == "update_nickname"):
+            updated_name = dataFromClient['sender_name']
+            sql = "UPDATE user SET username = %s  WHERE username = %s"
+            val = (dataFromClient['message_content'],  dataFromClient['sender_name'],)
+            mycursor.execute(sql , val)
+
+            mydb.commit()
+
+            print(mycursor.rowcount, "record(s) updated")
+            dataFromClient['message_content'] = 'success'
+            dataFromClient['sender_name'] = updated_name
+            dataFromClient['request_type'] = "nickname_response"
             
+            data = json.dumps(dataFromClient)
+            
+            client_connection.send(data.encode())
+            
+            # dataFromClient['request_type'] = "delete_profile_request"
+
+        elif (dataFromClient['request_type'] == "update_password"):
+            updated_name = dataFromClient['sender_name']
+            sql = "UPDATE user SET password = %s  WHERE username = %s"
+            val = (dataFromClient['message_content'],  dataFromClient['sender_name'],)
+            mycursor.execute(sql , val)
+
+            mydb.commit()
+
+            print(mycursor.rowcount, "record(s) updated")
+            dataFromClient['message_content'] = 'success'
+            dataFromClient['request_type'] = "passowrd_response"
+            # dataFromClient['sender_name'] = updated_name
+            
+            data = json.dumps(dataFromClient)
+            
+            client_connection.send(data.encode())
+            
+            # dataFromClient['request_type'] = "delete_profile_request"
+
 
         elif (dataFromClient['request_type'] == "search user"):
            print("in search box\n")

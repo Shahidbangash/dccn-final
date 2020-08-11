@@ -21,9 +21,9 @@ username = " "
 
 topFrame = tk.Frame(window)
 
-
+username = StringVar()
 lblName = tk.Label(topFrame, text = "Name:").pack(side=tk.LEFT)
-entName = tk.Entry(topFrame)
+entName = tk.Entry(topFrame , textvariable = username)
 entName.pack(side=tk.LEFT)
 lblName = tk.Label(topFrame, text = "password:" ,).pack(side=tk.LEFT)
 password_entry = tk.Entry(topFrame ,  show= '*')
@@ -126,8 +126,7 @@ update_nickname_button.config(state = tk.DISABLED)
 update_password_button.config(state = tk.DISABLED)
 upload_image_button.config(state = tk.DISABLED)
 delete_profile_button.config(state = tk.DISABLED)
-
-
+global client, HOST_PORT, HOST_ADDR
 
 
 
@@ -154,8 +153,8 @@ def connect():
 def connect_to_server(name, password):
     global client, HOST_PORT, HOST_ADDR
     try:
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.connect(('127.0.0.1', 12345))
+        # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # client.connect(('127.0.0.1', 12345))
         message_body = {'username' : name , "password" : password}
 
         message_header = {'sender_name' : name , 'reciever_name' : None , 'message_type' : 'login' , 'message_content' : message_body , 'request_type' : 'login' , 'result' : None}
@@ -163,17 +162,29 @@ def connect_to_server(name, password):
         from_server_string = json.dumps(message_header)
                 
         client.send(from_server_string.encode()) # Send name to server after connecting
-
-        
-        
-        
-        
-
         # start a thread to keep receiving message from server
         # do not block the main thread :)
-        threading._start_new_thread(receive_message_from_server, (client, "m"))
+        # threading._start_new_thread(receive_message_from_server, (client, "m"))
     except Exception as e:
         tk.messagebox.showerror(title="ERROR!!!", message="Cannot connect to host: " + HOST_ADDR + " on port: " + str(HOST_PORT) + " Server may be Unavailable. Try again later")
+
+def update_nickname():
+    
+    USER_INP = simpledialog.askstring(title="NEW NICK NAME", prompt="Please enter new nick name?:")
+    data = {'sender_name' :entName.get() , "request_type" : "update_nickname" , "message_content" : USER_INP  }
+    
+    data = json.dumps(data)
+    
+    client.send(data.encode())
+def update_password():
+    
+    USER_INP = simpledialog.askstring(title="NEW NICK NAME", prompt="Please enter new Password?:")
+    data = {'sender_name' :entName.get() , "request_type" : "update_password" , "message_content" : USER_INP  }
+    
+    data = json.dumps(data)
+    
+    client.send(data.encode())
+    
 
 def delete_profile():
     data = {'sender_name' :entName.get() , "request_type" : "delete_profile" , "message_content" : ""  }
@@ -210,44 +221,57 @@ def select_file_to_upload():
         client.send(data_string.encode());
         
 def popupmsg(msg):
+    global file_name
+    # file_name = ""
     
-    def select_file_to_upload():
-        global file_name
-        file_name = tk.filedialog.askopenfilename(initialdir = "./", multiple = False , filetypes =(("Images", "*.jpeg"),))
-        print(file_name)
-        if file_name is not None: 
+    def get_file_path():
+        global file_name_reg
+        # global file_name
+        file_name_reg = tk.filedialog.askopenfilename(initialdir = "./", multiple = False , filetypes =(("Images", "*.jpeg"),))
+        # print(file_name)
+        if file_name_reg is not None: 
             print("Please select file")
+        
+        file_name =  file_name_reg
+            
+        return file_name_reg
             
     popup = tk.Tk()
     popup.wm_title("!")
-    label_0 = Label(popup, text="Registration form",width=30,font=("bold", 50))
-    label_0.pack(ipady = 10 , pady = 10)
-
-
+    label_0 = Label(popup, text="Registration form",width=30,font=("bold", 30))
+    label_0.pack()
     label_1 = Label(popup, text="FullName",width=30,font=("bold", 10))
-    label_1.pack( pady = 10)
+    label_1.pack()
     fullname_entry = Entry(popup ,  width = 50)
-    fullname_entry.pack(ipady = 10 , pady = 10)
-        
-        
+    fullname_entry.pack(ipady = 10 , pady = 10)  
     label_2 = Label(popup, text="UserName",width=30,font=("bold", 10))
-    label_2.pack( pady = 10)
+    label_2.pack()
     username_entry = Entry(popup ,  width = 50)
-    username_entry.pack(ipady = 10 , pady = 10)
-       
+    username_entry.pack(ipady = 10 , pady = 10)    
     label_4 = Label(popup, text="Password:",width=30,font=("bold", 10))
     label_4.pack( pady = 10)
     password_entry = Entry(popup ,  width = 50)
-    password_entry.pack(ipady = 10 , pady = 10)
-        
-        # Button(popup, )
-    Button(popup, text='upload picture',width=43,bg='brown',fg='white' , command = select_file_to_upload).pack(ipady = 10 , pady = 10)
-        
-    Button(popup, text='Submit',width=43,bg='brown',fg='white' , command = signup).pack()
+    password_entry.pack(ipady = 10 , pady = 10) 
+    # Button(popup, text='upload picture',width=43,bg='brown',fg='white' , command =lambda: get_file_path()).pack(ipady = 10 , pady = 10)      
+    signup_button =Button(popup, text='Submit',width=43,bg='brown',fg='white' , command = lambda: signup(fullname_entry.get() , username_entry.get() , password_entry.get() ))
+
+    signup_button.pack(ipady = 10 , pady = 10)
     # Button(popup, text='Back',width=43,bg='brown',fg='white' , command = back).pack(ipady = 10 , pady = 10)
     
 def sign_up():
     popupmsg("heello")
+    
+def signup(fullname , username , password ):
+    # username = username.get()
+    # print(filename)
+    if(fullname != "" and username != "" and password != ""):
+        message_body = {'fullname' : fullname , 'username' : username , 'password' : password }
+        message_header = {'sender_name' : fullname , 'reciever_name' : None , 'message_type' : 'registration' , 'message_body' : message_body , 'request_type' : 'registration'}
+        data_string = json.dumps(message_header)
+        client.send(data_string.encode());
+        print("in signup screen validation \n printing the server response")
+    else:
+        tk.messagebox.showinfo(title="Empty field" , message="PLease fill all field")
     
 def recieve_online_user_response(from_server):
     tkDisplay.insert(END, "Result of User History of " + entName.get() + " and " + from_server['message_content'] + "\n")
@@ -275,17 +299,14 @@ def receive_message_from_server(sck, m):
     index = 1
     while True:
         from_server = sck.recv(90000)
-        
+        from_server = from_server.decode()
         from_server = json.loads(from_server)
-        
         print(from_server)
+        print(type(from_server))
         
-        if (from_server['request_type'] == "login_response"):
+        if (str(from_server['request_type']) == 'login_response'):
              
             if (from_server['message_content'] =="success" ):    
-                # controller.show_frame(AfterLoginPage)
-                # btnConnect.config(state=tk.DISABLED)
-                # tkMessage.config(state=tk.NORMAL)
                 password_entry.config(state  = tk.DISABLED)
                 btnConnect.config(state=tk.DISABLED)
                 search_button.config(state = tk.NORMAL)
@@ -296,7 +317,7 @@ def receive_message_from_server(sck, m):
                 delete_profile_button.config(state = tk.NORMAL)
                 result = from_server['result']
                 tkDisplay.config( state=tk.NORMAL)
-                # password_entry.config(state  = tk.DISABLED)
+               
                 entName.config(state = tk.DISABLED)
                 tk.messagebox.showinfo(title= from_server['message_content'] , message = from_server['message_content'])
             
@@ -313,11 +334,16 @@ def receive_message_from_server(sck, m):
             else:
                 password_entry.config(state  = tk.NORMAL)
                 btnConnect.config(state=tk.NORMAL)
-                tk.messagebox.showinfo(title= from_server['message_content'] , message = from_server['message_content'])
+                tk.messagebox.showinfo(title="Sorry Invaled user credentials" , message = str(from_server['message_content']))
                 entName.config(state=tk.NORMAL)
                 password_entry.config(state  = tk.NORMAL)
                 # tk.messagebox.showinfo(title = "Account information invalid" , message = from_serverfrom_server['message_content'])
 
+        elif(str(from_server['request_type']) == "signup_response"):
+            print("successfully registered")
+            if(from_server['message_content'] == "success"):
+                print("successfully registered")
+                tk.messagebox.showinfo(message="successfully registered")
         
         elif(from_server['request_type'] == 'chat_history_response'):
                 recieve_online_user_response(from_server)
@@ -339,10 +365,8 @@ def receive_message_from_server(sck, m):
             # tk.update()
             # tkDisplay.insert(index.end ,"Public message by " + str(from_server['sender_name']) + "  ->>  " + str(from_server['message_content']), "tag_your_message")
             tkDisplay.insert(END ,"\nPublic message by " + str(from_server['sender_name']) + "  ->>  " + str(from_server['message_content']))
-    # texts = tkDisplay.get("1.0", tk.END).strip()
-            index = index + 3
-    
-                
+
+             
         elif(from_server['request_type'] =='search_user_response'):
             recieve_search_response(from_server)
             
@@ -359,7 +383,7 @@ def receive_message_from_server(sck, m):
                 img.image = render
                 # img.pack(side = tk.LEFT)
 
-                
+          
                 
         elif(from_server['request_type'] == "view_image_response"):
             recieve_view_image_response(from_server)
@@ -379,32 +403,39 @@ def receive_message_from_server(sck, m):
 
         
             # recieve_chat_history_response(from_server)
+
+            
+        elif(from_server['request_type'] =="nickname_response"):
+            if(from_server['message_content'] =="success"):
+                entName.config(state = tk.NORMAL)
+                entName.delete(0 , END)
+                entName.insert(0 , str(from_server['sender_name']))
+                entName.config(state = tk.DISABLED)
+            else:
+                tk.messagebox.showinfo(title = "Failed" , message="Sorry we could not update your nick name")
+                
+        elif(from_server['request_type'] =="password_response"):
+            if(from_server['message_content'] =="success"):
+                tk.messagebox.showinfo(title = "success" , message="Successfu;y updated password")
+            else:
+                tk.messagebox.showinfo(title = "Failed" , message="Sorry we could not update your nick name")
+        
+        
        
-    window.destroy()
+       
+    # window.destroy()
 
 
 def getChatMessage(msg):
 
-    # msg = msg.replace('\n', '')
-    # texts = tkDisplay.get("1.0", tk.END).strip()
-    
     tkDisplay.config(state=tk.NORMAL)
-    # if len(texts) < 1:
-        # tkDisplay.insert(tk.END, entName.get() + " --> " + msg, "tag_your_message") # no line
-    # else:
     tkDisplay.insert(END, "\n" + entName.get() + " -->> " + msg , "tag_your_message" )
 
-    # tkDisplay.config(state=tk.DISABLED)
-    
     if(chat_option.get() == 1):
         send_mssage_to_server(msg , "public")
     else:
         USER_INP = simpledialog.askstring(title="Reciever Name", prompt="Please enter reciever name?:")
         send_private_message(msg , "private" , USER_INP)
-            
-
-
-    # tkDisplay.see(tk.END)
         message_entry.delete('1.0', tk.END)
 
 
@@ -420,5 +451,14 @@ def send_private_message(message , mode , reciever_name):
     data = json.dumps(data)
     client.send(data.encode())
     print("Sending private message to " + reciever_name)
+
+
+try:
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('127.0.0.1', 12345))
+    threading._start_new_thread(receive_message_from_server, (client, "m"))
+except Exception as e :
+    print(e)
+
 
 window.mainloop()
